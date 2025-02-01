@@ -17,20 +17,43 @@ import {
 import { motion } from "framer-motion"; // For animations
 import Confetti from "react-confetti"; // Celebration effect
 
-const QuizResult = ({ score, totalQuestions, answers = [], onRestart }) => {
+const QuizResult = ({ answers = [], onRestart }) => {  // Set default value for answers to an empty array
     const [showConfetti, setShowConfetti] = useState(false);
+    const [score, setScore] = useState(0);
+    const totalQuestions = answers.length;
+
+    const correctAnswerMarks = 4.0;  // Marks for correct answers
+    const negativeMarks = -1.0;  // Marks for incorrect answers
 
     useEffect(() => {
-        if (score >= totalQuestions / 2) {
+        if (totalQuestions === 0) return; // Avoid calculations if no answers
+
+        let totalScore = 0;
+        answers.forEach((answer) => {
+            if (answer.isCorrect) {
+                totalScore += correctAnswerMarks;  // Correct answer adds points
+            } else {
+                totalScore += negativeMarks;  // Incorrect answer deducts points
+            }
+        });
+        setScore(totalScore);
+
+        // Trigger confetti animation after calculating the score
+        if (totalScore >= totalQuestions * 0.7) {
             setShowConfetti(true);
-            setTimeout(() => setShowConfetti(false), 4000);
+            const confettiTimeout = setTimeout(() => {
+                setShowConfetti(false);
+            }, 4000);  // 4 seconds of confetti
+
+            // Cleanup timeout if the component unmounts before the timeout completes
+            return () => clearTimeout(confettiTimeout);
         }
-    }, [score, totalQuestions]);
+    }, [answers, totalQuestions]);
 
     const getScoreMessage = () => {
-        if (score === totalQuestions) return "🎉 Perfect Score! You're a genius!";
-        if (score >= totalQuestions * 0.7) return "👏 Great Job! You did amazing!";
-        if (score >= totalQuestions * 0.5) return "😊 Good Effort! Keep practicing!";
+        if (score === totalQuestions * correctAnswerMarks) return "🎉 Perfect Score! You're a genius!";
+        if (score >= totalQuestions * correctAnswerMarks * 0.7) return "👏 Great Job! You did amazing!";
+        if (score >= totalQuestions * correctAnswerMarks * 0.5) return "😊 Good Effort! Keep practicing!";
         return "😅 Don't worry, try again!";
     };
 
@@ -59,7 +82,7 @@ const QuizResult = ({ score, totalQuestions, answers = [], onRestart }) => {
                             {getScoreMessage()}
                         </Typography>
                         <Typography variant="h6" sx={{ mb: 3, fontSize: "1.2rem" }}>
-                            Your Score: <strong>{score} / {totalQuestions}</strong>
+                            Your Score: <strong>{score} / {totalQuestions * correctAnswerMarks}</strong>
                         </Typography>
 
                         {/* Table Format */}
@@ -76,13 +99,7 @@ const QuizResult = ({ score, totalQuestions, answers = [], onRestart }) => {
                                     </TableHead>
                                     <TableBody>
                                         {answers.map((answer, index) => (
-                                            <TableRow
-                                                key={index}
-                                                sx={{
-                                                    backgroundColor: index % 2 === 0 ? "#f0f8ff" : "white",
-                                                    "&:hover": { backgroundColor: "#e3f2fd" },
-                                                }}
-                                            >
+                                            <TableRow key={index} sx={{ backgroundColor: index % 2 === 0 ? "#f0f8ff" : "white", "&:hover": { backgroundColor: "#e3f2fd" } }}>
                                                 <TableCell align="center">{index + 1}</TableCell>
                                                 <TableCell>{answer.question}</TableCell>
                                                 <TableCell align="center" sx={{ color: answer.isCorrect ? "green" : "red", fontWeight: "bold" }}>

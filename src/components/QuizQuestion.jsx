@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Button,
     Card,
@@ -10,24 +10,32 @@ import {
     Box,
 } from "@mui/material";
 
-const QuizQuestion = ({ question, onNext }) => {
+const QuizQuestion = ({ question, onNext, score, setScore }) => {
     const [selectedAnswer, setSelectedAnswer] = useState(null);
+    const [isAnswered, setIsAnswered] = useState(false);
 
-    console.log("Rendering Question:", question);
+    // Extract options from the question object
+    const options = question.options.map((option) => option.description);
 
-    if (!question || !question.description) {
-        return <Typography color="error">No question available</Typography>;
-    }
+    // Update score when answer is selected
+    const handleAnswerSelection = (selectedOption) => {
+        setSelectedAnswer(selectedOption);
+        setIsAnswered(true);
 
-    // Temporary Dummy Options (since API doesn't provide any)
-    const defaultOptions = ["Option A", "Option B", "Option C", "Option D"];
+        const correctAnswer = question.options.find(option => option.is_correct);
+        if (selectedOption === correctAnswer.description) {
+            setScore(prevScore => prevScore + 4.0);  // Add 4.0 points for correct answer
+        } else {
+            setScore(prevScore => prevScore - 1.0);  // Deduct 1.0 point for incorrect answer
+        }
+    };
 
     const handleNext = () => {
-        // Trigger the callback to move to the next question
-        onNext(selectedAnswer);
+        onNext();  // Trigger callback to move to the next question
 
-        // Reset the selected answer for the next question
+        // Reset the selected answer and answer state for the next question
         setSelectedAnswer(null);
+        setIsAnswered(false);
     };
 
     return (
@@ -51,7 +59,7 @@ const QuizQuestion = ({ question, onNext }) => {
                     backgroundColor: "white",
                     textAlign: "center",
                 }}
-                key={question.id}  // Ensure this key changes when question changes
+                key={question.id}
             >
                 <CardContent>
                     <Typography variant="h5" fontWeight="bold" color="primary" sx={{ mb: 2 }}>
@@ -59,11 +67,11 @@ const QuizQuestion = ({ question, onNext }) => {
                     </Typography>
 
                     <RadioGroup
-                        value={selectedAnswer}  // Bind value to selectedAnswer
-                        onChange={(e) => setSelectedAnswer(e.target.value)}
+                        value={selectedAnswer}
+                        onChange={(e) => handleAnswerSelection(e.target.value)}
                         sx={{ textAlign: "left", marginLeft: 2 }}
                     >
-                        {defaultOptions.map((option, index) => (
+                        {options.map((option, index) => (
                             <FormControlLabel
                                 key={index}
                                 value={option}
@@ -97,14 +105,14 @@ const QuizQuestion = ({ question, onNext }) => {
                         variant="contained"
                         color="secondary"
                         onClick={handleNext}
-                        disabled={!selectedAnswer}
+                        disabled={!isAnswered}
                         sx={{
                             mt: 3,
                             width: "100%",
                             fontSize: "1.1rem",
                             borderRadius: "50px",
                             textTransform: "none",
-                            backgroundColor: selectedAnswer ? "#6200ea" : "#ccc",
+                            backgroundColor: isAnswered ? "#6200ea" : "#ccc",
                             "&:hover": { backgroundColor: "#4b0082" },
                         }}
                     >
